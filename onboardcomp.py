@@ -4,47 +4,34 @@ class BoardComputer:
         self.battery = Battery()
         self.status = status
         self.speed = 0
-        self.move = False
+        self.rate = 0.01
+        self.brake = False
         self.__manufacturer = "Mike Studios"
         self.__serialno = 1234567
         self.__software = "Studio 1.0"
-        self.process_data = {
-            "Speed": 0,
-            "Mileage": None,
-            "Location": None
-        }
 
-    def __add__(self, computer_object):
-        """Computer object can either be HardwareControl or ProcessUnit"""
-        if type(computer_object).__name__ == "ProcessUnit":
-            self.process_data["Location"] = computer_object.location
-
-    def accelerate(self, value=5):
-        self.move = True
-        self.speed += value
-
-    def brake(self, force_input=-5):
-        if self.speed <= 0:
-            print("Vehicle halted.")
+    def __add__(self, choice):
+        """adds and sets if the system is ON or OFF"""
+        if choice is "off":
+            self.status = "off"
+        elif choice is "on":
+            self.status = "on"
         else:
-            self.accelerate(force_input)
+            raise ValueError("System can only be ON or OFF")
 
-    def change_process_data(self, process_unit, hardware_control):
-        self.process_data["Speed"] = (process_unit.speed + hardware_control.speed)/2  #average speed coming from sensors and mechanical
-        self + process_unit
-
-
-
-    def run_mode(self):
+    def run_mode(self, input_data):
         while True:
-            if self.status.lower() is "off":
-                print("System OFF")
-                break
-            elif self.status.lower() is "on":
-                print("System ON")
-                while True:
-                    console = ProcessUnit()
-                    if self.move is True:
-                        print(f"Moving... position coordinates {console.location}")
-                    elif self.move is False:
-                        print(f"Vehicle stopped at {console.location}")
+            self.status = input("Do you want to start the system?: Please enter ON, OFF or (Q)uit").lower()
+            for n in input_data:
+                if self.status.lower() is "off":
+                    print("System OFF")
+                    break
+                elif self.status.lower() is "on":
+                    print("System ON")
+                    console = ProcessUnit(IMU(), GNSS(), LightSensor(), NetworkAntenna(), ObstacleDetection())
+                    chassis = HardwareControl()
+                    console.run_mode(n)
+                elif self.status.lower() is "Q":
+                    break
+                else:
+                    print("Please enter a valid status.")
