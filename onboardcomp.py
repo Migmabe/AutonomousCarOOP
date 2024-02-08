@@ -1,14 +1,16 @@
 class BoardComputer:
 
-    def __init__(self, status="off"):
+    def __init__(self, destination=(100, 0), status="off", network_antenna_object):
         self.battery = Battery()
         self.status = status
         self.speed = 0
         self.rate = 0.01
-        self.brake = False
+        self.brake = True
+        self.networkantenna = network_antenna_object
         self.__manufacturer = "Mike Studios"
         self.__serialno = 1234567
-        self.__software = "Studio 1.0"
+        self._software = 1.0
+        self.destination = destination
 
     def __add__(self, choice):
         """adds and sets if the system is ON or OFF"""
@@ -19,6 +21,19 @@ class BoardComputer:
         else:
             raise ValueError("System can only be ON or OFF")
 
+    @property
+    def software(self):
+        return self._software
+
+    @software.setter
+    def software(self, new):
+        self._software = new
+
+    def ov_check(self, latest_OV):
+        if self.software < latest_OV:
+            self.software = latest_OV
+            print(f"Software updated to version {self.software}")
+
     def run_mode(self, input_data):
         while True:
             self.status = input("Do you want to start the system?: Please enter ON, OFF or (Q)uit").lower()
@@ -28,10 +43,20 @@ class BoardComputer:
                     break
                 elif self.status.lower() is "on":
                     print("System ON")
-                    console = ProcessUnit(IMU(), GNSS(), LightSensor(), NetworkAntenna(), ObstacleDetection())
+                    self.ov_check()
+                    console = ProcessUnit(IMU(), GNSS(), LightSensor(), ObstacleDetection())
                     chassis = HardwareControl()
-                    console.run_mode(n)
+                    console.run_mode(n, self)
                 elif self.status.lower() is "Q":
                     break
                 else:
                     print("Please enter a valid status.")
+
+
+class NetworkAntenna:
+
+    rate = 0.01
+    def __init__(self):
+        self.status = "on"
+
+

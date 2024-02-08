@@ -6,7 +6,7 @@ from csv import reader
 #######################################################
 date_time = 19  # 19 represents 19:00 hours or 7PM
 light_threshold = 4
-
+latest_OV = 1.1
 """Here's the data that would supposedly come from sensors in real time"""
 input_data = []
 with open("files/x_y.csv") as g:
@@ -18,4 +18,4 @@ with open("files/x_y.csv") as g:
 #######################################################
 
 if __name__ == "__main__":
-    car1 = BoardComputer()
+    car1 = BoardComputer(NetworkAntenna())

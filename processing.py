@@ -1,74 +1,81 @@
 # Here all the modules connected to the Process Unit class
 from onboardcomp import BoardComputer
+import math
 
 
 class ProcessUnit(BoardComputer):
 
-    def __init__(self, imu_object, gnss_object, light_sensor_object, network_antenna_object, obstacle_detection_object):
+    def __init__(self, imu_object, gnss_object, light_sensor_object, obstacle_detection_object):
         super().__init__()
         self.error_list = []
         self.error_count = 0
         self.imu = imu_object
         self.gnss = gnss_object
         self.lightsensor = light_sensor_object
-        self.networkantenna = network_antenna_object
         self.obstacle_detection = obstacle_detection_object
         self.process_data = {
             "Speed": 0,
-            "Location": None,
+            "Location": [0, 0],
             "Lights": bool(0)
         }
 
-    def accelerate(self):
+    def accelerate(self, input_data):
         """where acceleration comes from IMU and times from CSV - mainly used in"""
         if self.brake is False:
-            self.speed += self.imu.acceleration * self.rate
+            self.speed += self.imu.get_acceleration(input_data) * self.rate
             self.process_data["Speed"] = self.speed
             print(f"Speed is now: {self.speed}")
         elif self.brake is True:
-            self.speed -= self.imu.acceleration * self.rate
+            self.speed -= self.imu.get_acceleration(input_data) * self.rate
             self.process_data["Speed"] = self.speed
             print(f"Speed is now: {self.speed}")
 
-    def brake(self):
+    def brake_func(self, location):
+        print(f"Vehicle braking. Position {location}")
         while self.speed > 0:
             self.accelerate()
         if self.speed <= 0:
-            print("Vehicle halted.")
+            print(f"Vehicle halted at {location}")
 
-    def run_mode(self, n):
+    def choice(self, n):
+        self.obstacle_detection.get_obstacle(n)
+        if self.obstacle_detection is True:
+            self.brake = True
+
+    def run_mode(self, n, car1):
+        self.lights()
         while True:
-
+            if self.process_data["Location"][1] == 10:
+                print("You have arrived!")
+                car1.status = "off"
+                break
+            else:
+                self.choice(n)
                 if self.brake is False:
-                    print(f"Moving... position coordinates {self.location}")
-                    self.accelerate()  #assummed time interval of 0.01 --> feedback rate from sensors 100Hz
+                    self.accelerate(n)  # assumed time interval of 0.01 --> feedback rate from sensors 100Hz
+                    pos = self.location(n)
+                    print(f"Moving... position coordinates {pos}")
                 elif self.brake is True:
-                    self.brake()
-                    print(f"Vehicle stopped at {self.location}")
-                    break
-
+                    pos = self.location(n)
+                    self.brake_func(pos)
 
     def __setattr__(self, key, value):
         print(f"Setting {key} to {value}")
         super().__setattr__(key, value)
 
-
-    def location(self):
+    def location(self, n):
         """do average between get_position and get_location"""
-        if self.imu.position is not None and self.gnss.get_location() is not None:
-            return
-
+        if self.imu.position is not None and self.gnss.location is not None:
+            self.process_data["Location"] = self.imu.new_position(n)
+            return self.imu.new_position(n)
 
     def lights(self):
         if self.lightsensor.threshold > 3:
-            self.process_data["Lights"] = bool(0)
-        else:
             self.process_data["Lights"] = bool(1)
-
-
-
-class NetworkAntenna:
-    pass
+            print("Lights ON")
+        else:
+            self.process_data["Lights"] = bool(0)
+            print("Lights OFF")
 
 
 class GNSS:
@@ -88,10 +95,9 @@ class GNSS:
         self.location = [new_value[3], new_value[4]]
 
 
-
 class ObstacleDetection:
 
-    def __init__(self, range_ = 50):
+    def __init__(self, range_=50):
         """where range is in metres"""
         self.__range = range_
         self.obstacle = False
@@ -103,13 +109,16 @@ class ObstacleDetection:
             self.obstacle = False
 
 
-
 class IMU:
     """With acceleration over time and orientation, it can get its position in coordinates"""
 
+    rate = 0.01  # in this case corresponds to the one from the OnBoardComputer but it may not as it is an individual
+
+    # component on its own
+
     def __init__(self, acceleration=0):
         self.acceleration = acceleration
-        self._orientation = None
+        self._orientation = [0, 0]
         self._position = [0, 0]
 
     @property
@@ -118,37 +127,40 @@ class IMU:
 
     @orientation.setter
     def orientation(self, new_value):
-        if type(new_value) is not int or float:
-            self._orientation.cardinal_directions(new_value)
+        """where the orientation must be the 3rd column value or input_data[2]"""
+        if type(new_value[2]) is str:
+            self._orientation.cardinal_directions(new_value[2])
         else:
-            self._orientation = new_value
-
+            self._orientation = [math.sin(new_value[2]), math.cos(new_value[2])]
 
     @property
     def position(self):
         return self._position
 
-    @position.setter
-    def position(self, new_value):
-        self._position = new_value
-
-
     def cardinal_directions(self, direction):
+        """where direction == new_value from orientation function"""
         if direction.lower() == "north":
-            self._orientation = 90
+            self._orientation = [0, 1]
         elif direction.lower() == "south":
-            self._orientation = 270
+            self._orientation = [0, -1]
         elif direction.lower() == "east":
-            self._orientation = 0
+            self._orientation = [1, 0]
         elif direction.lower() == "west":
-            self._orientation = 180
+            self._orientation = [-1, 0]
         else:
             raise ValueError("Invalid orientation")
 
-    def get_acceleration(self, new_value):
-        """where new_value must be the 2nd column of the row being called in input_data[2]"""
-        self.acceleration = new_value
+    def get_acceleration(self, input_data):
+        """where new_value must be the 2nd column of the row being called in input_data[1]"""
+        self.acceleration = input_data[1]
+        return self.acceleration
 
+    def new_position(self, input_data):
+        self.orientation = input_data
+        [self.position[0], self.position[1]] = [
+            math.cos(self.orientation[0]) * (self.position[0] + IMU().rate ** 2 * self.get_acceleration(input_data)),
+            math.sin(self.orientation[1]) * (self.position[1] + IMU().rate ** 2 * self.get_acceleration(input_data))]
+        return self.position
 
 
 class LightSensor:
