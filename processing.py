@@ -1,5 +1,6 @@
 # Here all the modules connected to the Process Unit class
 from onboardcomp import BoardComputer
+from hardware import HardwareControl
 import math
 
 
@@ -19,6 +20,11 @@ class ProcessUnit(BoardComputer):
             "Lights": bool(0)
         }
 
+    def updater(self, car1):
+        """where car1 is my car object or processing unit object"""
+        self.brake = car1.brake
+        self.speed = car1.speed
+
     def accelerate(self, input_data):
         """where acceleration comes from IMU and times from CSV - mainly used in"""
         if self.brake is False:
@@ -31,6 +37,7 @@ class ProcessUnit(BoardComputer):
             print(f"Speed is now: {self.speed}")
 
     def brake_func(self, location):
+        """where input is location list[] from imu"""
         print(f"Vehicle braking. Position {location}")
         while self.speed > 0:
             self.accelerate()
@@ -45,8 +52,10 @@ class ProcessUnit(BoardComputer):
     def run_mode(self, n, car1):
         self.lights()
         while True:
-            if self.process_data["Location"][1] == 10:
+            hardware = HardwareControl(car1)
+            if self.process_data["Location"][1] >= self.destination[1]:
                 print("You have arrived!")
+                self.updater(car1)
                 car1.status = "off"
                 break
             else:

@@ -18,4 +18,4 @@ with open("files/x_y.csv") as g:
 #######################################################
 
 if __name__ == "__main__":
-    car1 = BoardComputer(NetworkAntenna())
+    car1 = BoardComputer()

@@ -1,12 +1,13 @@
 class BoardComputer:
 
-    def __init__(self, destination=(100, 0), status="off", network_antenna_object):
+    def __init__(self, destination=(100, 0), status="off", network_antenna_object=None):
+        if network_antenna_object == None:
+            self.networkantenna = NetworkAntenna()
         self.battery = Battery()
         self.status = status
         self.speed = 0
         self.rate = 0.01
         self.brake = True
-        self.networkantenna = network_antenna_object
         self.__manufacturer = "Mike Studios"
         self.__serialno = 1234567
         self._software = 1.0
@@ -36,7 +37,7 @@ class BoardComputer:
 
     def run_mode(self, input_data):
         while True:
-            self.status = input("Do you want to start the system?: Please enter ON, OFF or (Q)uit").lower()
+            self + input("Do you want to start the system?: Please enter ON, OFF or (Q)uit").lower()
             for n in input_data:
                 if self.status.lower() is "off":
                     print("System OFF")
@@ -45,8 +46,7 @@ class BoardComputer:
                     print("System ON")
                     self.ov_check()
                     console = ProcessUnit(IMU(), GNSS(), LightSensor(), ObstacleDetection())
-                    chassis = HardwareControl()
-                    console.run_mode(n, self)
+                    console.run_mode(n)
                 elif self.status.lower() is "Q":
                     break
                 else:
@@ -54,9 +54,7 @@ class BoardComputer:
 
 
 class NetworkAntenna:
-
     rate = 0.01
+
     def __init__(self):
         self.status = "on"
-
-
