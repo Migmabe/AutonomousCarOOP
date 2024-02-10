@@ -1,5 +1,4 @@
 from onboardcomp import BoardComputer
-from processing import ProcessUnit
 
 from csv import reader
 
@@ -12,10 +11,11 @@ input_data = []
 with open("files/x_y.csv") as g:
     csv_read = reader(g, delimiter=",")
     next(g)  # skip first titles row
-    for t, a, orientation, latitude, longitude in csv_read:
-        input_data.append([t, a, orientation, latitude, longitude])
+    for t, a, orientation, latitude, longitude, obstacle, speed in csv_read:
+        input_data.append([t, a, orientation, latitude, longitude, obstacle, speed])
 
 #######################################################
 
 if __name__ == "__main__":
     car1 = BoardComputer()
+    car1.run_mode(input_data, latest_OV, light_threshold)

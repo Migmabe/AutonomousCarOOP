@@ -1,6 +1,5 @@
 # Here all the modules connected to the Process Unit class
-from onboardcomp import BoardComputer
-from hardware import HardwareControl
+
 import math
 
 
@@ -20,10 +19,14 @@ class ProcessUnit(BoardComputer):
             "Lights": bool(0)
         }
 
-    def updater(self, car1):
-        """where car1 is my car object or processing unit object"""
-        self.brake = car1.brake
-        self.speed = car1.speed
+    def updater(self, upper_object):
+        """where car1 is my car object or hardware control object"""
+        if isinstance(upper_object, BoardComputer):
+            upper_object.brake = self.brake
+            upper_object.speed = self.speed
+        elif isinstance(upper_object, HardwareControl):
+            self.error_count = upper_object.error_count
+            self.error_list = upper_object.error_list
 
     def accelerate(self, input_data):
         """where acceleration comes from IMU and times from CSV - mainly used in"""
@@ -52,7 +55,7 @@ class ProcessUnit(BoardComputer):
     def run_mode(self, n, car1):
         self.lights()
         while True:
-            hardware = HardwareControl(car1)
+            self.updater(hardware_object)
             if self.process_data["Location"][1] >= self.destination[1]:
                 print("You have arrived!")
                 self.updater(car1)
@@ -85,6 +88,7 @@ class ProcessUnit(BoardComputer):
         else:
             self.process_data["Lights"] = bool(0)
             print("Lights OFF")
+
 
 
 class GNSS:

@@ -1,15 +1,17 @@
-from processing import ProcessUnit
+from onboardcomp import *
 
 
 class HardwareControl(ProcessUnit):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(imu_object=None, gnss_object=None, light_sensor_object=None, obstacle_detection_object=None)
         self.hardware = ElectricalMotor(self.speed, self.status).error()
 
     def error(self):
         self.error_list.append(self.hardware)
         self.error_count = len(self.error_list)
+
+    """Here we use the updater function inherited from the class to retrofeed the data to the computer"""
 
 
 class Light:
@@ -37,8 +39,8 @@ class ElectricalMotor:
 
     def error(self):
         if self.linear_vel < 0:
-            self.wheel.brake.append("Linear velocity reverted in electrical motor level")
-        return self.wheel.brake
+            self.wheel.append("Linear velocity reverted in electrical motor level")
+        return self.wheel
 
 
 class Wheel:
@@ -71,6 +73,6 @@ class Brake:
         return Light(0, 0, "red").error(self)
 
     def error(self, status):
-        if type(status) is str or type(status) is float or type(status) is int:
+        if type(status) is not bool:
             self.errors.append("Braking status invalid")
             return self.errors
